@@ -66,12 +66,14 @@ call s:set('g:WebDevIconsUnicodeDecorateFolderNodes', 1)
 call s:set('g:DevIconsEnableFoldersOpenClose', 0)
 call s:set('g:DevIconsEnableFolderPatternMatching', 1)
 call s:set('g:DevIconsEnableFolderExtensionPatternMatching', 0)
+call s:set('g:DevIconsEnableDistro', 1)
 call s:set('g:WebDevIconsUnicodeDecorateFolderNodesExactMatches', 1)
 call s:set('g:WebDevIconsUnicodeGlyphDoubleWidth', 1)
 call s:set('g:WebDevIconsNerdTreeBeforeGlyphPadding', ' ')
 call s:set('g:WebDevIconsNerdTreeAfterGlyphPadding', ' ')
 call s:set('g:WebDevIconsNerdTreeGitPluginForceVAlign', 1)
-call s:set('g:NERDTreeUpdateOnCursorHold', 1)
+call s:set('g:NERDTreeUpdateOnCursorHold', 1) " Obsolete: For backward compatibility
+call s:set('g:NERDTreeGitStatusUpdateOnCursorHold', 1)
 call s:set('g:WebDevIconsTabAirLineBeforeGlyphPadding', ' ')
 call s:set('g:WebDevIconsTabAirLineAfterGlyphPadding', '')
 
@@ -96,10 +98,17 @@ function s:getDistro()
     return s:distro
   endif
 
-  if executable('lsb_release')
+  if has('bsd')
+    let s:distro = ''
+    return s:distro
+  endif
+
+  if g:DevIconsEnableDistro && executable('lsb_release')
     let s:lsb = system('lsb_release -i')
     if s:lsb =~# 'Arch'
       let s:distro = ''
+    elseif s:lsb =~# 'Gentoo'
+      let s:distro = ''
     elseif s:lsb =~# 'Ubuntu'
       let s:distro = ''
     elseif s:lsb =~# 'Cent'
@@ -193,6 +202,7 @@ function! s:setDictionaries()
         \ 'yaml'     : '',
         \ 'toml'     : '',
         \ 'bat'      : '',
+        \ 'mk'       : '',
         \ 'jpg'      : '',
         \ 'jpeg'     : '',
         \ 'bmp'      : '',
@@ -214,6 +224,7 @@ function! s:setDictionaries()
         \ 'hxx'      : '',
         \ 'hs'       : '',
         \ 'lhs'      : '',
+        \ 'nix'      : '',
         \ 'lua'      : '',
         \ 'java'     : '',
         \ 'sh'       : '',
@@ -258,6 +269,7 @@ function! s:setDictionaries()
         \ 'exs'      : '',
         \ 'eex'      : '',
         \ 'leex'     : '',
+        \ 'heex'     : '',
         \ 'vim'      : '',
         \ 'ai'       : '',
         \ 'psd'      : '',
@@ -272,7 +284,9 @@ function! s:setDictionaries()
         \ 'xcplayground' : '',
         \ 'tex'      : 'ﭨ',
         \ 'r'        : 'ﳒ',
-        \ 'rproj'    : '鉶'
+        \ 'rproj'    : '鉶',
+        \ 'sol'      : 'ﲹ',
+        \ 'pem'      : ''
         \}
 
   let s:file_node_exact_matches = {
@@ -289,9 +303,12 @@ function! s:setDictionaries()
         \ '.ds_store'                        : '',
         \ '.gitconfig'                       : '',
         \ '.gitignore'                       : '',
+        \ '.gitattributes'                   : '',
         \ '.gitlab-ci.yml'                   : '',
         \ '.bashrc'                          : '',
         \ '.zshrc'                           : '',
+        \ '.zshenv'                          : '',
+        \ '.zprofile'                        : '',
         \ '.vimrc'                           : '',
         \ '.gvimrc'                          : '',
         \ '_vimrc'                           : '',
@@ -308,7 +325,8 @@ function! s:setDictionaries()
         \ 'config.ru'                        : '',
         \ 'gemfile'                          : '',
         \ 'makefile'                         : '',
-        \ 'cmakelists.txt'                   : ''
+        \ 'cmakelists.txt'                   : '',
+        \ 'robots.txt'                       : 'ﮧ'
         \}
 
   let s:file_node_pattern_matches = {
@@ -389,7 +407,7 @@ endfunction
 " scope: local
 " stole solution/idea from nerdtree-git-plugin :)
 function! s:CursorHoldUpdate()
-  if g:NERDTreeUpdateOnCursorHold != 1
+  if g:NERDTreeUpdateOnCursorHold != 1 || g:NERDTreeGitStatusUpdateOnCursorHold != 1
     return
   endif
 
@@ -482,9 +500,9 @@ endfunction
 
 " a:1 (bufferName), a:2 (isDirectory)
 " scope: public
-function! WebDevIconsGetFileTypeSymbol(...)
+function! WebDevIconsGetFileTypeSymbol(...) abort
   if a:0 == 0
-    let fileNodeExtension = expand('%:e')
+    let fileNodeExtension = !empty(expand('%:e')) ? expand('%:e') : &filetype
     let fileNode = expand('%:t')
     let isDirectory = 0
   else
